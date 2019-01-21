@@ -3,69 +3,88 @@
 // Get the canvas element from the page
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
+
 /*
-  Rresize the canvas to occupy the full page,
+  resize the canvas to occupy the full page,
   by getting the widow width and height and setting it to canvas
 */
 canvas.width  = window.innerWidth;
 canvas.height = window.innerHeight;
+
+
 var activeBodies = [];
 var selectedBody = {};
 var lastUpdate = Date.now();
 var dt = 0;
-var bodyscale = ((canvas.width + canvas.height) / 2) / 1280;
 var km = ((canvas.width + canvas.height) / 2) / 10000;
-var g = 6.67E-11;
+var G = 6.67E-11;
 
 class Body {
-  constructor (xPos, yPos, radius, vector, velocity, mass) {
+  constructor (position, radius, velocity, acceleration, mass) {
+    this.p = position || [0, 0];
     this.r = radius || 10;
-    this.x = xPos || 0;
-    this.y = yPos || 0;
+    this.v = velocity || [0, 0];
+    this.a = acceleration || [0, 0];
     this.m = mass || 6.0E24;
-    // vector dfined by two x and y
-    this.v = vector || [0, 0];
-    this.vl = velocity || 0;
   }
 
   render () {
-    /*
-    arc parameters
-    x The x-coordinate of the center of the circle
-    y The y-coordinate of the center of the circle
-    r The radius of the circle
-    sAngle The starting angle, in radians (0 is at the 3 o'clock position of the arc's circle)
-    eAngle The ending angle, in radians
-    */
-    ctx.arc(this.x, this.y, this.r * bodyscale, 0, 2 * Math.PI);
-    this.x += (this.v[0] * (this.vl / dt)) / km;
-    this.y += (-this.v[1] * (this.vl / dt)) / km;
+    ctx.arc(this.p[0], this.p[1], this.r, 0, 2 * Math.PI);
+    this.v[0] += this.a[0] * dt;
+    this.v[1] += this.a[1] * dt;
+    this.p[0] += this.v[0] * dt;
+    this.p[1] += this.v[1] * dt;
   }
+}
+
+
+function vectorAdd(V1, V2) {
+  return [V1[0] + V2[0], V1[1] + V2[1]];
+}
+
+function vectorScale(V1, S1) {
+  return [V1[0] * S1, V1[1] * S1];
+}
+
+function vectorNegate(V) {
+  return vectorScale(V, -1);
+}
+
+function sqrtMagnitude(V) {
+  return Math.pow(V[0], 2) + Math.pow(V[1], 2);
 }
 
 // takes two bodies and calculates gravity's effect
 function gravity (a, b) {
-  // F = G * (m1 * m2) / r * r
-  var xd = Math.abs(a.x - b.x) * km;
-  var yd = Math.abs(a.y - b.y) * km;
-  var distance = Math.sqrt(xd * xd + yd * yd);
-  var force = g * ((a.m * b.m) / (distance * distance));
+  var r2 = sqrtMagnitude(vectorAdd(a.p, vectorNegate(b.p)));
+  if (r2 == 0) {
+    r2 = 1E-10;
+    console.warn("uh oh!");
+  }
 
-  // apply force in the direction of other object
-  // direction towards a as -> [x, y] vector
-  var direction = [(b.x - a.x) * km / xd, (b.y - a.y) * km / xd];
+  var mFg = (G * a.m * b.m) / r2;
 
-  // b vector changed to head towards a using direction_a with velocity
-  a.vl += (force / a.mass) / dt;
-  a.v[0] = direction[0];
-  a.v[1] = direction[1];
+  var dir = vectorAdd(b.p, vectorNegate(a.p));
+  console.dir(JSON.stringify(dir));
+      dir = vectorScale(dir, 1 / Math.sqrt(sqrtMagnitude(dir)));
 
-  /* include
-  // same thing but opposite
-  var direction_b = [(b.x - a.x) / xd, (b.y - a.y) / xd];
-  a.v[0] += direction_b[0] * force;
-  a.v[1] += direction_b[1] * force;
-  */
+  var Fg = vectorScale(dir, mFg);
+
+  // Fnet = ma
+  a.a = vectorScale(Fg, 1/a.m);
+  if (r2 < 25) {
+    try {
+      throw "meme";
+    } catch(e) {
+      console.log("sandos");
+    }
+  }
+
+  // because dt is not infinitesimal
+  // by the time two bodies get very close their velocity is enormous
+  // but as they pass over the acceleration in the opposite direction should counteract that right?
+  // no. Because when the next call to gravity is made their position has changed
+  // so do a pre and post call
 }
 
 // takes two bodies and tests collision
@@ -85,14 +104,14 @@ for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
   window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
 }
 function init () {
-  activeBodies.push(new Body(window.innerWidth / 3, window.innerHeight / 2, 10, [1, 1], 10 * km));
-  activeBodies.push(new Body(window.innerWidth / 3 * 2, window.innerHeight / 2, 10, [-1, 0], 10 * km));
+  activeBodies.push(new Body([100, 200], 10, [0, 0], [0, 0], 1E15));
+  activeBodies.push(new Body([120, 220], 10, [0, 0], [0, 0], 1E15));
 }
 
 function gameloop () {
   window.requestAnimationFrame(gameloop);
   var now = Date.now();
-  dt = now - lastUpdate;
+  dt = (now - lastUpdate) * 0.00001;
   lastUpdate = now;
 
   // clear
@@ -101,17 +120,16 @@ function gameloop () {
   // rendering
   ctx.beginPath();
   for (var x = 0; x < activeBodies.length; x++) {
-    activeBodies[x].render();
     for (var y = 0; y < activeBodies.length; y++) {
-      // gravity(activeBodies[x], activeBodies[y]);
-
-      /*
-      if (collide(activeBodies[i], activeBodies[foo]) === true) {
-        console.log('collision');
-      }
-      */
+      if (x != y)
+        gravity(activeBodies[x], activeBodies[y]);
     }
   }
+
+  for (x = 0; x < activeBodies.length; x++) {
+    activeBodies[x].render();
+  }
+
   // tests if selected body is initialized with a body type if so render
   if (selectedBody.hasOwnProperty('r')) {
     selectedBody.render();
