@@ -3,29 +3,29 @@
 // Get the canvas element from the page
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
+
 /*
-  Rresize the canvas to occupy the full page,
+  resize the canvas to occupy the full page,
   by getting the widow width and height and setting it to canvas
 */
 canvas.width  = window.innerWidth;
 canvas.height = window.innerHeight;
+
+
 var activeBodies = [];
 var selectedBody = {};
 var lastUpdate = Date.now();
 var dt = 0;
-var bodyscale = ((canvas.width + canvas.height) / 2) / 1280;
 var km = ((canvas.width + canvas.height) / 2) / 10000;
 var g = 6.67E-11;
 
 class Body {
-  constructor (xPos, yPos, radius, vector, velocity, mass) {
+  constructor (position, radius, velocity, acceleration, mass) {
+    this.p = position || [0, 0];
     this.r = radius || 10;
-    this.x = xPos || 0;
-    this.y = yPos || 0;
+    this.v = velocity || [0, 0];
+    this.a = acceleration || [0, 0];
     this.m = mass || 6.0E24;
-    // vector dfined by two x and y
-    this.v = vector || [0, 0];
-    this.vl = velocity || 0;
   }
 
   render () {
@@ -37,9 +37,11 @@ class Body {
     sAngle The starting angle, in radians (0 is at the 3 o'clock position of the arc's circle)
     eAngle The ending angle, in radians
     */
-    ctx.arc(this.x, this.y, this.r * bodyscale, 0, 2 * Math.PI);
-    this.x += (this.v[0] * (this.vl / dt)) / km;
-    this.y += (-this.v[1] * (this.vl / dt)) / km;
+    ctx.arc(this.p[0], this.p[1], this.r, 0, 2 * Math.PI);
+    this.v[0] += this.a[0] * dt;
+    this.v[1] += this.a[1] * dt;
+    this.p[0] += this.v[0] * dt;
+    this.p[1] += this.v[1] * dt;
   }
 }
 
@@ -85,14 +87,14 @@ for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
   window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
 }
 function init () {
-  activeBodies.push(new Body(window.innerWidth / 3, window.innerHeight / 2, 10, [1, 1], 10 * km));
-  activeBodies.push(new Body(window.innerWidth / 3 * 2, window.innerHeight / 2, 10, [-1, 0], 10 * km));
+  activeBodies.push(new Body([100, 300], 10, [0, 0], [0, 0], 1E10));
+  activeBodies.push(new Body([1000, 300], 10, [0, 0], [0, 0], 1E10));
 }
 
 function gameloop () {
   window.requestAnimationFrame(gameloop);
   var now = Date.now();
-  dt = now - lastUpdate;
+  dt = (now - lastUpdate) * 0.001;
   lastUpdate = now;
 
   // clear
