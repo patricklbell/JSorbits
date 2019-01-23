@@ -116,6 +116,7 @@ function collide (a, b) {
   // console.log('dis: ' + dis);
 
   if ((dis / scale) <= a.r + b.r) {
+    b.p = vectorAdd(b.p, vectorNegate(((b.p, vectorNegate(a.p)), [-a.r, -a.r])));
     return true;
   }
 }
@@ -127,12 +128,20 @@ function collideApply (a, b) {
   var aci = vectorDot(a.v, collision);
   var bci = vectorDot(b.v, collision);
 
-// TODO: plug in the velocity formular here
-  var acf = bci;
-  var bcf = aci;
+  // TODO: plug in the velocity formular here
+  var acf = vectorScale(
+    vectorAdd((vectorScale(a.v, a.m - b.m)), vectorScale(vectorScale(b.v, b.m), 2)),
+    a.m + b.m);
+  console.log(acf);
+  var bcf = vectorScale(
+    vectorAdd((vectorScale(b.v, b.m - a.m)), vectorScale(vectorScale(a.v, a.m), 2)),
+    a.m + b.m);
+  console.log(bcf);
 
-  a.v = vectorScale(vectorAdd(a.v, vectorScale(collision, (acf - aci))), 1);
-  b.v = vectorScale(vectorAdd(b.v, vectorScale(collision, (bcf - bci))), 1);
+  a.v = vectorAdd(a.v, vectorScale(vectorScale(collision, (vectorAdd(acf, [-aci, -aci]))), 1 / scale));
+  // console.log(vectorScale(vectorScale(collision, (acf - aci)), scale));
+  b.v = vectorAdd(b.v, vectorScale(vectorScale(collision, (vectorAdd(bcf, [-bci, -bci]))), 1 / scale));
+  // console.log(vectorScale(vectorScale(collision, (bcf - bci)), scale));
   a.a = [0, 0];
   b.a = [0, 0];
 }
@@ -146,8 +155,8 @@ for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
 
 document.addEventListener('click', function (event) {
   var rect = canvas.getBoundingClientRect();
-  var x = (((event.clientX - rect.left) - xPos) * scale) / zoom;
-  var y = (((event.clientY - rect.top) - yPos) * scale) / zoom;
+  var x = (((event.clientX - rect.left) - xPos * zoom) * scale) / zoom;
+  var y = (((event.clientY - rect.top) - yPos * zoom) * scale) / zoom;
   // console.log('x: ' + x + ' y: ' + y);
   if (selectedBody.hasOwnProperty('r')) {
     // get distance from current mouse and direction and set velocity
@@ -245,8 +254,8 @@ function gameloop () {
             if (collide(activeBodies[x], activeBodies[y]) !== true) {
               gravity(activeBodies[x], activeBodies[y]);
             } else {
-              gravity(activeBodies[x], activeBodies[y]);
-              collideApply(activeBodies[x], activeBodies[y]);
+              // gravity(activeBodies[x], activeBodies[y]);
+              // collideApply(activeBodies[x], activeBodies[y]);
               console.log('collision detected');
             }
           }
