@@ -1,2 +1,3 @@
 # JSorbits
-a physics simulator for planets using real world measurements.
+A physics simulator for planets with gravity, simple collision, bouncing.\\
+Any suggestions are welcome.
