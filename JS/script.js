@@ -337,7 +337,6 @@ this.canvas.addEventListener('click', function (event) {
     //   }
     // }
     selectedBody = new Body([x, y], holdTime * 100000, [0, 0], [0, 0], Math.pow(holdTime*10000000 + 10000000, 2), '#'+Math.floor(Math.random()*8388607 + 8388607).toString(16));
-    console.log([x, y], holdTime *100000, [0, 0], [0, 0], Math.pow(holdTime*10000000 + 10000000, 2), '#'+Math.floor(Math.random()*8388607 + 8388607).toString(16));
   }
 });
 this.canvas.addEventListener('mousedown', function (evt) {
@@ -487,7 +486,7 @@ function gameloop() {
 
       if (KE + U >= 0){
         // newV = Math.sqrt(-U / (0.5*activeBodies[x].m));
-        // console.log("EXTRA ENERGY - KE: ", KE, "U: ", U);
+        console.log("EXTRA ENERGY - KE: ", KE, "U: ", U);
         
         // activeBodies[x].v = vectorScale(vectorNormalise(activeBodies[x].v), newV);
       }
